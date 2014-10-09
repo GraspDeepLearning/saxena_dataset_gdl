@@ -10,7 +10,7 @@ import matplotlib.pyplot as plt
 import scipy.ndimage
 
 RAW_DATA_PATH = 'data'
-OUTPUT_DATA_FILE = 'l_p_r_b_patches_0_or_1.h5'
+OUTPUT_DATA_FILE = 'l_p_r_horizontal_patches_0_or_1.h5'
 
 
 def get_rectangles(rect_filename):
@@ -52,7 +52,8 @@ def fill_rgbd(rgb_filename, pcd_filename, rgbd_data, current_sample_index):
     rgbd_data[current_sample_index, :, :, 3] = rgbd_data[current_sample_index, :, :, 3]/rgbd_data[current_sample_index, :, :, 3].max()
 
 
-def fill_pos_patches(rectangle_filename, rgbd_data, rgbd_patches, rgbd_patch_labels, current_sample_index, current_patch_index, patch_label_value):
+
+def fill_patches(rectangle_filename, rgbd_data, rgbd_patches, rgbd_patch_labels, xy_diff, current_sample_index, current_patch_index, patch_label_value):
     for rectangle in get_rectangles(rectangle_filename):
         try:
             x_coord = int((float(rectangle[0][1]) + float(rectangle[1][1]) + float(rectangle[2][1]) + float(rectangle[3][1]))/4)
@@ -63,66 +64,41 @@ def fill_pos_patches(rectangle_filename, rgbd_data, rgbd_patches, rgbd_patch_lab
         except:
             return current_patch_index
 
-        # add the data sample for the center of the gripper
-        rgbd_patches[current_patch_index] = rgbd_data[current_sample_index, x_coord-36:x_coord+36, y_coord-36:y_coord+36]
-        rgbd_patch_labels[current_patch_index] = (0, patch_label_value, 0, 0)
-
-        current_patch_index += 1
-        rgbd_patches.resize((current_patch_index + 1, 72, 72, 4))
-        rgbd_patch_labels.resize((current_patch_index + 1, 4))
-
-        #add the data sample for the left gripper
-        rgbd_patches[current_patch_index] = rgbd_data[current_sample_index, x_coord-x_diff-36:x_coord-x_diff+36, y_coord-y_diff-36:y_coord-y_diff+36]
-        rgbd_patch_labels[current_patch_index] = (patch_label_value, 0, 0, 0)
-
-        current_patch_index += 1
-        rgbd_patches.resize((current_patch_index + 1, 72, 72, 4))
-        rgbd_patch_labels.resize((current_patch_index + 1, 4))
-
-        #add the data sample for the right gripper
-        rgbd_patches[current_patch_index] = rgbd_data[current_sample_index, x_coord+x_diff-36:x_coord+x_diff+36, y_coord+y_diff-36:y_coord+y_diff+36]
-        rgbd_patch_labels[current_patch_index] = (0, 0, patch_label_value, 0)
-
-        current_patch_index += 1
-        rgbd_patches.resize((current_patch_index + 1, 72, 72, 4))
-        rgbd_patch_labels.resize((current_patch_index + 1, 4))
-
-    return current_patch_index
-
-def fill_neg_patches(rectangle_filename, rgbd_data, rgbd_patches, rgbd_patch_labels, current_sample_index, current_patch_index, patch_label_value):
-    for rectangle in get_rectangles(rectangle_filename):
-        try:
-            x_coord = int((float(rectangle[0][1]) + float(rectangle[1][1]) + float(rectangle[2][1]) + float(rectangle[3][1]))/4)
-            y_coord = int((float(rectangle[0][0]) + float(rectangle[1][0]) + float(rectangle[2][0]) + float(rectangle[3][0]))/4)
-            x_diff = -int((float(rectangle[0][1]) - float(rectangle[1][1]))/2.0)
-            y_diff = -int((float(rectangle[0][0]) - float(rectangle[1][0]))/2.0)
-
-        except:
-            return current_patch_index
+        #we want points with the left gripper on the left and the y delta to be small.
+        print
+        print 'x_diff: ' + str(x_diff)
+        print 'y_diff: ' + str(y_diff)
+        print
 
         # add the data sample for the center of the gripper
         rgbd_patches[current_patch_index] = rgbd_data[current_sample_index, x_coord-36:x_coord+36, y_coord-36:y_coord+36]
-        rgbd_patch_labels[current_patch_index] = (0, 0, 0, patch_label_value)
+        rgbd_patch_labels[current_patch_index] = (0, patch_label_value, 0)
+        xy_diff[current_patch_index] = (x_diff, y_diff)
 
         current_patch_index += 1
         rgbd_patches.resize((current_patch_index + 1, 72, 72, 4))
-        rgbd_patch_labels.resize((current_patch_index + 1, 4))
+        rgbd_patch_labels.resize((current_patch_index + 1, 3))
+        xy_diff.resize((current_patch_index + 1, 2))
 
         #add the data sample for the left gripper
         rgbd_patches[current_patch_index] = rgbd_data[current_sample_index, x_coord-x_diff-36:x_coord-x_diff+36, y_coord-y_diff-36:y_coord-y_diff+36]
-        rgbd_patch_labels[current_patch_index] = (0, 0, 0, patch_label_value)
+        rgbd_patch_labels[current_patch_index] = (patch_label_value, 0, 0)
+        xy_diff[current_patch_index] = (x_diff, y_diff)
 
         current_patch_index += 1
         rgbd_patches.resize((current_patch_index + 1, 72, 72, 4))
-        rgbd_patch_labels.resize((current_patch_index + 1, 4))
+        rgbd_patch_labels.resize((current_patch_index + 1, 3))
+        xy_diff.resize((current_patch_index + 1, 2))
 
         #add the data sample for the right gripper
         rgbd_patches[current_patch_index] = rgbd_data[current_sample_index, x_coord+x_diff-36:x_coord+x_diff+36, y_coord+y_diff-36:y_coord+y_diff+36]
-        rgbd_patch_labels[current_patch_index] = (0, 0, 0, patch_label_value)
+        rgbd_patch_labels[current_patch_index] = (0, 0, patch_label_value)
+        xy_diff[current_patch_index] = (x_diff, y_diff)
 
         current_patch_index += 1
         rgbd_patches.resize((current_patch_index + 1, 72, 72, 4))
-        rgbd_patch_labels.resize((current_patch_index + 1, 4))
+        rgbd_patch_labels.resize((current_patch_index + 1, 3))
+        xy_diff.resize((current_patch_index + 1, 2))
 
     return current_patch_index
 
@@ -147,10 +123,12 @@ def extract_raw():
 
         dataset.create_dataset("rgbd_data", (num_samples, 480, 640, 4), chunks=(10, 480, 640, 4))
         dataset.create_dataset("rgbd_patches", (1, 72, 72, 4), maxshape=(None, 72, 72, 4), chunks=(10, 72, 72, 4))
-        dataset.create_dataset("rgbd_patch_labels", (1, 4), maxshape=(None, 4),  chunks=(1000, 4))
+        dataset.create_dataset("rgbd_patch_labels", (1, 3), maxshape=(None, 3),  chunks=(1000, 3))
+        dataset.create_dataset("xy_diff", (1, 2), maxshape=(None, 2),  chunks=(1000, 2))
         #dataset.create_dataset("finger_labels", (1, 3))
         dataset["finger_labels"] = ["l_gripper", "palm", "r_gripper", "bad_spot"]
 
+        xy_diff = dataset['xy_diff']
         rgbd_data = dataset["rgbd_data"]
         rgbd_patches = dataset["rgbd_patches"]
         rgbd_patch_labels = dataset["rgbd_patch_labels"]
@@ -161,6 +139,7 @@ def extract_raw():
         for data_file in files:
             if '.png' in data_file:
 
+                print 'found ' + str(current_patch_index) + ' patches so far.'
                 print str(current_sample_index) + "/" + str(num_samples)
 
                 file_root = data_file[:-5]
@@ -171,8 +150,8 @@ def extract_raw():
                 neg_grasp_filename = str(file_root) + "cneg.txt"
 
                 fill_rgbd(rgb_filename, pcd_filename, rgbd_data, current_sample_index)
-                current_patch_index = fill_pos_patches(pos_grasp_filename, rgbd_data, rgbd_patches, rgbd_patch_labels, current_sample_index, current_patch_index, 1)
-                current_patch_index = fill_neg_patches(neg_grasp_filename, rgbd_data, rgbd_patches, rgbd_patch_labels, current_sample_index, current_patch_index, 1)
+                current_patch_index = fill_patches(pos_grasp_filename, rgbd_data, rgbd_patches, rgbd_patch_labels, xy_diff, current_sample_index, current_patch_index, 1)
+                current_patch_index = fill_patches(neg_grasp_filename, rgbd_data, rgbd_patches, rgbd_patch_labels, xy_diff, current_sample_index, current_patch_index, -1)
 
                 current_sample_index += 1
 
